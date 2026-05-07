@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Röst till E-post" />
+  <title>Röst till E-post</title>
+
+  <link rel="manifest" id="manifestLink" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #0f0f0f;
+      --bg2: #1a1a1a;
+      --bg3: #242424;
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.15);
+      --text: #f0f0f0;
+      --text2: #888;
+      --text3: #555;
+      --accent: #e8ff6e;
+      --accent-dim: rgba(232,255,110,0.12);
+      --red: #ff5c5c;
+      --red-bg: rgba(255,92,92,0.1);
+      --green: #5cffa0;
+      --green-bg: rgba(92,255,160,0.1);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      overscroll-behavior: none;
+    }
+
+    .app {
+      min-height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 56px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .app-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .lang-toggle {
+      display: flex;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      gap: 2px;
+      padding: 2px;
+    }
+
+    .lang-btn {
+      padding: 5px 12px;
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text2);
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .lang-btn.active {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border-hover);
+    }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .text-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .text-input:focus { border-color: var(--border-hover); }
+    .text-input::placeholder { color: var(--text3); }
+
+    .subject-row { margin-top: 10px; }
+    .subject-label {
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .rec-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 24px 16px;
+    }
+
+    .rec-ring {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rec-ring::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+
+    .rec-ring.recording::before {
+      border-color: var(--red);
+      box-shadow: 0 0 0 8px rgba(255,92,92,0.08), 0 0 0 20px rgba(255,92,92,0.04);
+      animation: ripple 1.5s ease-out infinite;
+    }
+
+    @keyframes ripple {
+      0% { box-shadow: 0 0 0 0 rgba(255,92,92,0.25), 0 0 0 0 rgba(255,92,92,0.1); }
+      100% { box-shadow: 0 0 0 16px rgba(255,92,92,0), 0 0 0 32px rgba(255,92,92,0); }
+    }
+
+    .rec-circle {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-user-select: none;
+      user-select: none;
+      padding: 0;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      touch-action: manipulation;
+    }
+
+    .rec-circle:active { transform: scale(0.93); }
+
+    .rec-circle.recording {
+      background: var(--red-bg);
+      border-color: var(--red);
+    }
+
+    .rec-icon {
+      font-size: 28px;
+      color: var(--text2);
+      transition: color 0.2s;
+    }
+
+    .rec-circle.recording .rec-icon { color: var(--red); }
+
+    .rec-meta {
+      text-align: center;
+    }
+
+    .rec-status {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text2);
+      min-height: 20px;
+    }
+
+    .rec-status.active { color: var(--red); }
+    .rec-status.done { color: var(--green); }
+    .rec-status.error { color: var(--red); }
+
+    .rec-timer {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--text3);
+      margin-top: 4px;
+      min-height: 18px;
+    }
+
+    .transcript-area {
+      width: 100%;
+      min-height: 110px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .transcript-area:focus { border-color: var(--border-hover); }
+    .transcript-area::placeholder { color: var(--text3); }
+
+    .char-count {
+      font-size: 12px;
+      color: var(--text3);
+      text-align: right;
+      margin-top: 6px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .send-btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text2);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+
+    .send-btn:not(:disabled):hover {
+      background: var(--bg3);
+      border-color: var(--border-hover);
+      color: var(--text);
+    }
+
+    .send-btn:not(:disabled):active { transform: scale(0.98); }
+
+    .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .send-btn.ready {
+      background: var(--accent-dim);
+      border-color: rgba(232,255,110,0.3);
+      color: var(--accent);
+    }
+
+    .send-btn.sent {
+      background: var(--green-bg);
+      border-color: rgba(92,255,160,0.3);
+      color: var(--green);
+    }
+
+    .send-icon { font-size: 18px; }
+
+    .send-status {
+      font-size: 13px;
+      color: var(--text3);
+      text-align: center;
+      min-height: 18px;
+    }
+
+    .send-status.success { color: var(--green); }
+    .send-status.error { color: var(--red); }
+
+    .unsupported {
+      background: rgba(255,160,50,0.1);
+      border: 1px solid rgba(255,160,50,0.25);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #ffa032;
+      display: none;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="app-header">
+    <span class="app-title">Röst → E-post</span>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('sv-SE', this)">🇸🇪 SV</button>
+      <button class="lang-btn" onclick="setLang('en-US', this)">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div class="unsupported" id="unsupportedMsg">
+    ⚠️ Din webbläsare stödjer inte röstinspelning. Öppna sidan i Chrome för Android.
+  </div>
+
+  <div class="card">
+    <div class="field-label">Mottagare</div>
+    <input class="text-input" type="email" id="emailTo" value="oscar.lindh@speeron.com" autocomplete="email" inputmode="email" />
+    <div class="subject-row">
+      <span class="subject-label" id="subjectLabel">Ämne</span>
+      <input class="text-input" type="text" id="emailSubject" placeholder="Röstanteckning" value="Röstanteckning" />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="rec-wrapper">
+      <div class="rec-ring" id="recRing">
+        <button class="rec-circle" id="recCircle" ontouchend="event.preventDefault();toggleRecording();" onclick="toggleRecording()" aria-label="Spela in" type="button">
+          <svg class="rec-icon" id="recIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </button>
+      </div>
+      <div class="rec-meta">
+        <div class="rec-status" id="recStatus">Tryck för att spela in</div>
+        <div class="rec-timer" id="recTimer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field-label" id="transcriptLabel">Transkription</div>
+    <textarea class="transcript-area" id="transcript" placeholder="Transkriptionen visas här under inspelning..."></textarea>
+    <div class="char-count" id="charCount">0</div>
+  </div>
+
+  <button class="send-btn" id="sendBtn" onclick="sendEmail()" disabled>
+    <svg class="send-icon" id="sendIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+    <span id="sendLabel">Skicka e-post</span>
+  </button>
+  <div class="send-status" id="sendStatus"></div>
+
+</div>
+
+<script>
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) document.getElementById('unsupportedMsg').style.display = 'block';
+
+let recognition = null;
+let isRecording = false;
+let timerInterval = null;
+let seconds = 0;
+let finalTranscript = '';
+let currentLang = 'sv-SE';
+
+const strings = {
+  sv: {
+    recIdle: 'Tryck för att spela in',
+    recActive: 'Mikrofon aktiv – tala nu',
+    recDone: 'Inspelning klar',
+    transcriptLabel: 'Transkription',
+    subjectLabel: 'Ämne',
+    subjectPlaceholder: 'Röstanteckning',
+    transcriptPlaceholder: 'Transkriptionen visas här under inspelning...',
+    sendLabel: 'Skicka e-post',
+    sendOpening: 'Öppnar din e-postklient...',
+    sendSuccess: 'E-postklienten öppnades med ditt meddelande.',
+    errEmpty: 'Fyll i e-postadress och transkription.',
+    errEmail: 'Ogiltig e-postadress.',
+    errMic: 'Mikrofonåtkomst nekad.',
+    errSpeech: 'Inget tal detekterades.',
+    errNet: 'Nätverksfel.',
+    datePrefix: 'Röstmeddelande transkriberat',
+    locale: 'sv-SE'
+  },
+  en: {
+    recIdle: 'Tap to record',
+    recActive: 'Microphone active – speak now',
+    recDone: 'Recording done',
+    transcriptLabel: 'Transcription',
+    subjectLabel: 'Subject',
+    subjectPlaceholder: 'Voice message',
+    transcriptPlaceholder: 'Transcription appears here during recording...',
+    sendLabel: 'Send email',
+    sendOpening: 'Opening your email client...',
+    sendSuccess: 'Email client opened with your message.',
+    errEmpty: 'Enter email address and transcription.',
+    errEmail: 'Invalid email address.',
+    errMic: 'Microphone access denied.',
+    errSpeech: 'No speech detected.',
+    errNet: 'Network error.',
+    datePrefix: 'Voice message transcribed',
+    locale: 'en-GB'
+  }
+};
+
+function s() { return strings[currentLang === 'sv-SE' ? 'sv' : 'en']; }
+
+function setLang(lang, btn) {
+  if (isRecording) return;
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyStrings();
+}
+
+function applyStrings() {
+  const l = s();
+  document.getElementById('recStatus').textContent = l.recIdle;
+  document.getElementById('transcriptLabel').textContent = l.transcriptLabel;
+  document.getElementById('subjectLabel').textContent = l.subjectLabel;
+  document.getElementById('emailSubject').placeholder = l.subjectPlaceholder;
+  document.getElementById('transcript').placeholder = l.transcriptPlaceholder;
+  document.getElementById('sendLabel').textContent = l.sendLabel;
+  updateCharCount();
+}
+
+function pad(n) { return n < 10 ? '0' + n : n; }
+
+function updateTimer() {
+  seconds++;
+  document.getElementById('recTimer').textContent = Math.floor(seconds/60) + ':' + pad(seconds%60);
+}
+
+function updateCharCount() {
+  const n = document.getElementById('transcript').value.length;
+  document.getElementById('charCount').textContent = n + ' tecken';
+  const hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(document.getElementById('emailTo').value.trim());
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = n === 0 || !hasEmail;
+  if (n > 0 && hasEmail) btn.className = 'send-btn ready';
+  else btn.className = 'send-btn';
+}
+
+document.getElementById('transcript').addEventListener('input', updateCharCount);
+document.getElementById('emailTo').addEventListener('input', updateCharCount);
+
+function toggleRecording() {
+  if (isRecording) stopRecording(); else startRecording();
+}
+
+function stopIcon() {
+  return `<svg class="rec-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
+}
+function micIcon() {
+  return `<svg class="rec-icon" id="recIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`;
+}
+
+function startRecording() {
+  const st = document.getElementById('recStatus');
+  const timer = document.getElementById('recTimer');
+
+  if (!SpeechRecognition) {
+    st.textContent = 'FEL: Web Speech API saknas i denna webbläsare';
+    st.className = 'rec-status error';
+    return;
+  }
+
+  finalTranscript = document.getElementById('transcript').value;
+  st.textContent = 'Begär mikrofontillstånd...';
+  st.className = 'rec-status';
+  timer.textContent = '';
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    st.textContent = 'FEL: Mikrofon-API saknas';
+    st.className = 'rec-status error';
+    timer.textContent = 'Säkerställ att sidan körs via HTTPS';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+      stream.getTracks().forEach(track => track.stop());
+      st.textContent = 'Tillstånd OK, startar...';
+      beginRecognition();
+    })
+    .catch(err => {
+      st.textContent = 'Fel: ' + err.name + ' – ' + err.message;
+      st.className = 'rec-status error';
+      timer.textContent = 'Inställningar → Appar → Chrome → Behörigheter → Mikrofon → Tillåt';
+    });
+}
+
+function beginRecognition() {
+  recognition = new SpeechRecognition();
+  recognition.lang = currentLang;
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecording = true; seconds = 0;
+    document.getElementById('recCircle').classList.add('recording');
+    document.getElementById('recRing').classList.add('recording');
+    document.getElementById('recCircle').innerHTML = stopIcon();
+    const st = document.getElementById('recStatus');
+    st.textContent = s().recActive;
+    st.className = 'rec-status active';
+    timerInterval = setInterval(updateTimer, 1000);
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '', newFinal = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) newFinal += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    if (newFinal) finalTranscript += newFinal;
+    document.getElementById('transcript').value = finalTranscript + interim;
+    updateCharCount();
+  };
+
+  recognition.onerror = (e) => {
+    const l = s();
+    const msgs = { 'not-allowed': l.errMic, 'no-speech': l.errSpeech, 'network': l.errNet };
+    const st = document.getElementById('recStatus');
+    st.textContent = msgs[e.error] || e.error;
+    st.className = 'rec-status error';
+    stopRecording();
+  };
+
+  recognition.onend = () => { if (isRecording) recognition.start(); };
+  recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  clearInterval(timerInterval);
+  if (recognition) { recognition.onend = null; recognition.stop(); }
+  document.getElementById('recCircle').classList.remove('recording');
+  document.getElementById('recRing').classList.remove('recording');
+  document.getElementById('recCircle').innerHTML = micIcon();
+  document.getElementById('recTimer').textContent = '';
+  const st = document.getElementById('recStatus');
+  st.textContent = s().recDone;
+  st.className = 'rec-status done';
+  updateCharCount();
+}
+
+function sendEmail() {
+  const to = document.getElementById('emailTo').value.trim();
+  const subject = document.getElementById('emailSubject').value.trim() || s().subjectPlaceholder;
+  const body = document.getElementById('transcript').value.trim();
+  const l = s();
+  const sendStatus = document.getElementById('sendStatus');
+
+  if (!to || !body) { sendStatus.textContent = l.errEmpty; sendStatus.className = 'send-status error'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { sendStatus.textContent = l.errEmail; sendStatus.className = 'send-status error'; return; }
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString(l.locale, { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  const fullBody = l.datePrefix + ' ' + dateStr + ':\n\n' + body;
+  const mailto = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(fullBody);
+
+  const btn = document.getElementById('sendBtn');
+  btn.className = 'send-btn sent';
+  document.getElementById('sendLabel').textContent = l.sendOpening;
+  sendStatus.textContent = l.sendSuccess;
+  sendStatus.className = 'send-status success';
+  window.location.href = mailto;
+
+  setTimeout(() => {
+    btn.className = 'send-btn ready';
+    document.getElementById('sendLabel').textContent = l.sendLabel;
+    sendStatus.textContent = '';
+    sendStatus.className = 'send-status';
+  }, 4000);
+}
+
+// Inline manifest as blob so single-file PWA works
+const manifest = {
+  name: "Röst till E-post",
+  short_name: "Röst → Mail",
+  description: "Spela in röst, transkribera och skicka som e-post",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#0f0f0f",
+  theme_color: "#0f0f0f",
+  orientation: "portrait",
+  icons: [
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%230f0f0f'/%3E%3Cpath d='M96 52a20 20 0 0 1 20 20v28a20 20 0 0 1-40 0V72a20 20 0 0 1 20-20z' fill='%23e8ff6e'/%3E%3Cpath d='M128 88v8a32 32 0 0 1-64 0v-8' stroke='%23e8ff6e' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3Cline x1='96' y1='128' x2='96' y2='144' stroke='%23e8ff6e' stroke-width='6' stroke-linecap='round'/%3E%3Cline x1='80' y1='144' x2='112' y2='144' stroke='%23e8ff6e' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%230f0f0f'/%3E%3Cpath d='M256 120a56 56 0 0 1 56 56v80a56 56 0 0 1-112 0v-80a56 56 0 0 1 56-56z' fill='%23e8ff6e'/%3E%3Cpath d='M352 232v24a96 96 0 0 1-192 0v-24' stroke='%23e8ff6e' stroke-width='16' stroke-linecap='round' fill='none'/%3E%3Cline x1='256' y1='352' x2='256' y2='392' stroke='%23e8ff6e' stroke-width='16' stroke-linecap='round'/%3E%3Cline x1='216' y1='392' x2='296' y2='392' stroke='%23e8ff6e' stroke-width='16' stroke-linecap='round'/%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+
+const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+document.getElementById('manifestLink').href = URL.createObjectURL(blob);
+
+applyStrings();
+</script>
+
+</body>
+</html>
